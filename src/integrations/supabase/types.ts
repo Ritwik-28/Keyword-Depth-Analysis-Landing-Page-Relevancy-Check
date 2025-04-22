@@ -9,7 +9,39 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      keyword_analysis: {
+        Row: {
+          created_at: string
+          desktop_depth: number
+          desktop_screenshot: string | null
+          id: string
+          keyword: string
+          mobile_depth: number
+          mobile_screenshot: string | null
+          page_url: string
+        }
+        Insert: {
+          created_at?: string
+          desktop_depth: number
+          desktop_screenshot?: string | null
+          id?: string
+          keyword: string
+          mobile_depth: number
+          mobile_screenshot?: string | null
+          page_url: string
+        }
+        Update: {
+          created_at?: string
+          desktop_depth?: number
+          desktop_screenshot?: string | null
+          id?: string
+          keyword?: string
+          mobile_depth?: number
+          mobile_screenshot?: string | null
+          page_url?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
