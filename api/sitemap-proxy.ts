@@ -2,10 +2,11 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import fetch from 'node-fetch';
 import { redis } from '../src/utils/redisClient';
 
-const SITEMAP_URL = process.env.SITEMAP_TARGET_URL || 'https://www.crio.do/sitemap-pages.xml';
+const SITEMAP_URL = 'https://www.crio.do/sitemap-pages.xml';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
+    await redis.connect(); // Ensure redis is connected before use
     const cacheKey = `sitemap-proxy:${SITEMAP_URL}`;
     const cached = await redis.get(cacheKey);
     if (cached) {

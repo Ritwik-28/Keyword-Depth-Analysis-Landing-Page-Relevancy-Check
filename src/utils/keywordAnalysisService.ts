@@ -1,6 +1,13 @@
 import { supabase } from '@/integrations/supabase/client';
 import { KeywordAnalysis } from '@/types';
 import { uploadScreenshot, saveKeywordAnalysis } from './screenshotStorage';
+import { Redis } from '@upstash/redis';
+
+// Always initialize redis at the top so it's available everywhere
+export const redis = new Redis({
+  url: process.env.VITE_REDIS_URL!,
+  token: process.env.VITE_REDIS_API_KEY!,
+});
 
 // Calculate depth percentage based on element position
 function calculateDepthPercentage(element: Element, deviceType: 'desktop' | 'mobile'): number {
