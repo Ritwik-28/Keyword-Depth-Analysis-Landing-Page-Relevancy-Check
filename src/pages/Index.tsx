@@ -11,7 +11,7 @@ import AnalysisResults from '@/components/AnalysisResults';
 import { SitemapUrl, AnalysisState, KeywordAnalysis } from '@/types';
 import { analyzeKeywordOnPage, fetchKeywordAnalysisResults } from '@/utils/keywordAnalysisService';
 import { AlertCircle, BarChart, History } from 'lucide-react';
-import SitemapLoader from '@/components/SitemapLoader';
+
 
 const Index = () => {
   const [sitemapUrls, setSitemapUrls] = useState<SitemapUrl[]>([]);
@@ -37,6 +37,23 @@ const Index = () => {
   useEffect(() => {
     // Load history data when the component mounts
     loadHistoryData();
+    // Fetch and parse sitemap URLs on mount
+    const fetchAndSetSitemap = async () => {
+      try {
+        const sitemapUrl = import.meta.env.VITE_SITEMAP_URL;
+        if (!sitemapUrl) throw new Error('Sitemap URL not set in .env');
+        const response = await fetch(sitemapUrl);
+        if (!response.ok) throw new Error('Failed to fetch sitemap');
+        const xmlText = await response.text();
+        // parseXml is imported from utils/xmlParser
+        const { parseXml } = await import('@/utils/xmlParser');
+        const urls = parseXml(xmlText);
+        setSitemapUrls(urls);
+      } catch (err) {
+        setAnalysisState(prev => ({ ...prev, error: 'Failed to load sitemap: ' + (err instanceof Error ? err.message : String(err)) }));
+      }
+    };
+    fetchAndSetSitemap();
   }, []);
 
   const handleSitemapLoaded = (urls: SitemapUrl[]) => {
@@ -103,58 +120,33 @@ const Index = () => {
   const canAnalyze = selectedUrl !== '' && keywords.length > 0 && !analysisState.isAnalyzing;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="container mx-auto max-w-6xl">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight text-blue-900">Page Depth Explorer</h1>
-          <p className="text-gray-600 mt-2">
-            Analyze where keywords appear on your web pages for both desktop and mobile devices.
-          </p>
-        </div>
-
-        <Tabs defaultValue="analyze" className="mb-8">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="analyze" className="flex items-center">
-              <BarChart size={16} className="mr-2" /> 
-              Analyze
-            </TabsTrigger>
-            <TabsTrigger value="history" className="flex items-center" onClick={loadHistoryData}>
-              <History size={16} className="mr-2" /> 
-              History
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="analyze" className="space-y-6 mt-6">
-            <Card>
+    <div className="w-full min-h-screen bg-gray-50 md:bg-white flex flex-col items-center px-2 sm:px-4">
+      <Tabs defaultValue="analyze" className="w-full max-w-2xl md:max-w-4xl lg:max-w-5xl mx-auto mt-4 md:mt-8">
+        <TabsList className="w-full grid grid-cols-2 mb-4 md:mb-6">
+          <TabsTrigger value="analyze" className="text-xs md:text-base py-2"> <BarChart className="mr-2 h-4 w-4" /> Analyze </TabsTrigger>
+          <TabsTrigger value="history" className="text-xs md:text-base py-2"> <History className="mr-2 h-4 w-4" /> History </TabsTrigger>
+        </TabsList>
+        <TabsContent value="analyze">
+          <div className="space-y-4 md:space-y-6">
+            <Card className="rounded-lg shadow-sm border overflow-x-auto">
               <CardHeader>
-                <CardTitle>Step 1: Load Sitemap</CardTitle>
-                <CardDescription>
-                  Provide a sitemap URL to load pages for analysis
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <SitemapLoader onSitemapLoaded={handleSitemapLoaded} />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Step 2: Select Page</CardTitle>
-                <CardDescription>
-                  Choose a landing page from your sitemap to analyze
+                <CardTitle className="text-base md:text-lg">Step 1: Select Page</CardTitle>
+                <CardDescription className="text-xs md:text-sm">
+                  Choose a page from the sitemap to analyze
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <PageSelector 
                   urls={sitemapUrls} 
                   onPageSelected={handlePageSelected} 
+                  selectedUrl={selectedUrl}
                 />
               </CardContent>
             </Card>
-
-            <Card>
+            <Card className="rounded-lg shadow-sm border overflow-x-auto">
               <CardHeader>
-                <CardTitle>Step 3: Enter Keywords</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-base md:text-lg">Step 2: Enter Keywords</CardTitle>
+                <CardDescription className="text-xs md:text-sm">
                   Add keywords you want to analyze (separate with commas)
                 </CardDescription>
               </CardHeader>
@@ -162,55 +154,42 @@ const Index = () => {
                 <KeywordInput onKeywordsChange={handleKeywordsChange} />
               </CardContent>
             </Card>
-
-            <div className="flex flex-col space-y-4">
-              {analysisState.error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{analysisState.error}</AlertDescription>
-                </Alert>
-              )}
-              
-              <div className="flex justify-center">
-                <AnalyzeButton 
-                  onClick={handleAnalyze} 
-                  disabled={!canAnalyze} 
-                  isAnalyzing={analysisState.isAnalyzing} 
-                />
-              </div>
+            <div className="flex flex-col items-stretch md:items-center gap-2">
+              <AnalyzeButton 
+                onClick={handleAnalyze} 
+                isLoading={analysisState.isAnalyzing} 
+                disabled={analysisState.isAnalyzing}
+                className="w-full md:w-auto py-3 text-base md:text-lg"
+              >
+                Analyze
+              </AnalyzeButton>
             </div>
-
+            {analysisState.error && (
+              <Alert variant="destructive" className="mt-2 md:mt-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs md:text-base">{analysisState.error}</AlertDescription>
+              </Alert>
+            )}
             {analysisState.results.length > 0 && (
-              <div className="mt-8">
-                <Separator className="my-6" />
+              <div className="overflow-x-auto rounded-md border bg-white p-2 shadow-sm mt-2 md:mt-4">
                 <AnalysisResults results={analysisState.results} />
               </div>
             )}
-          </TabsContent>
-          
-          <TabsContent value="history" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Analysis History</CardTitle>
-                <CardDescription>
-                  View your previous keyword analysis results
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {historyResults.length > 0 ? (
-                  <AnalysisResults results={historyResults} />
-                ) : (
-                  <div className="flex items-center justify-center h-40 bg-gray-50 rounded-md border border-dashed">
-                    <p className="text-gray-500">
-                      No analysis history found. Run some analysis first.
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+          </div>
+        </TabsContent>
+        <TabsContent value="history">
+          <div className="overflow-x-auto rounded-md border bg-white p-2 shadow-sm mt-2 md:mt-4">
+            <AnalysisResults results={historyResults} />
+          </div>
+          {historyResults.length === 0 && (
+            <div className="flex items-center justify-center h-40 bg-gray-50 rounded-md border border-dashed">
+              <p className="text-gray-500">
+                No analysis history found. Run some analysis first.
+              </p>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

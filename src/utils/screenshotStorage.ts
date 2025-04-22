@@ -1,9 +1,9 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { convertToWebP } from './imageConverter';
 
+// Accepts a WebP Blob from the browser and uploads it directly
 export async function uploadScreenshot(
-  imageBuffer: Buffer, 
+  imageBlob: Blob, 
   pageUrl: string, 
   keyword: string, 
   type: 'desktop' | 'mobile'
@@ -11,16 +11,13 @@ export async function uploadScreenshot(
   try {
     console.log(`Uploading ${type} screenshot for "${keyword}" on ${pageUrl}...`);
     
-    // Convert image to WebP
-    const webpBuffer = await convertToWebP(imageBuffer);
-    
     // Generate a unique filename
     const filename = `${pageUrl.replace(/[^a-zA-Z0-9]/g, '_')}_${keyword}_${type}_${Date.now()}.webp`;
     
     // Upload to Supabase storage
     const { data, error } = await supabase.storage
       .from('screenshots')
-      .upload(filename, webpBuffer, {
+      .upload(filename, imageBlob, {
         contentType: 'image/webp',
         upsert: true
       });
@@ -64,7 +61,7 @@ export async function saveKeywordAnalysis(
         mobile_depth: mobileDepth,
         desktop_screenshot: desktopScreenshotUrl,
         mobile_screenshot: mobileScreenshotUrl
-      })
+      }, { onConflict: ['page_url', 'keyword'] })
       .select();
     
     if (error) {

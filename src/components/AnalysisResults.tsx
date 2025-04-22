@@ -47,7 +47,8 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({ results }) => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[180px]">Keyword</TableHead>
+                <TableHead className="w-[240px]">Page URL</TableHead>
+                <TableHead className="w-[120px]">Keyword</TableHead>
                 <TableHead>
                   <div className="flex items-center">
                     <Laptop size={16} className="mr-1" />
@@ -75,57 +76,141 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({ results }) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {results.map((result, index) => (
-                <TableRow key={index}>
-                  <TableCell className="font-medium">{result.keyword}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center">
-                      <div 
-                        className={`w-16 h-4 rounded-full mr-2 ${getDepthColor(result.desktopDepth)}`}
-                      >
-                        <div 
-                          className="h-full rounded-full bg-blue-600" 
-                          style={{ width: `${result.desktopDepth}%` }} 
-                        />
-                      </div>
-                      <span className="text-sm flex items-center">
-                        {result.desktopDepth}<Percent size={12} />
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <img 
-                      src={result.desktopScreenshot} 
-                      alt={`Desktop screenshot for ${result.keyword}`} 
-                      className="w-20 h-12 object-cover rounded border border-gray-200 cursor-pointer"
-                      onClick={() => handleImageClick(result.desktopScreenshot)}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center">
-                      <div 
-                        className={`w-16 h-4 rounded-full mr-2 ${getDepthColor(result.mobileDepth)}`}
-                      >
-                        <div 
-                          className="h-full rounded-full bg-teal-600" 
-                          style={{ width: `${result.mobileDepth}%` }} 
-                        />
-                      </div>
-                      <span className="text-sm flex items-center">
-                        {result.mobileDepth}<Percent size={12} />
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <img 
-                      src={result.mobileScreenshot} 
-                      alt={`Mobile screenshot for ${result.keyword}`} 
-                      className="w-10 h-16 object-cover rounded border border-gray-200 cursor-pointer"
-                      onClick={() => handleImageClick(result.mobileScreenshot)}
-                    />
-                  </TableCell>
-                </TableRow>
-              ))}
+              {results.map((result, index) => {
+                const hasScreenshotError = !!(result.screenshotErrors?.desktop || result.screenshotErrors?.mobile);
+                return (
+                  <React.Fragment key={index}>
+                    <TableRow className={hasScreenshotError ? 'bg-yellow-50' : ''}>
+                      <TableCell>
+                        <a
+                          href={result.pageUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs break-all text-blue-800 underline"
+                        >
+                          {result.pageUrl}
+                        </a>
+                      </TableCell>
+                      <TableCell className="font-medium">{result.keyword}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center">
+                          <div 
+                            className={`w-16 h-4 rounded-full mr-2 ${getDepthColor(result.desktopDepth)}`}
+                          >
+                            <div 
+                              className="h-full rounded-full bg-blue-600" 
+                              style={{ width: `${result.desktopDepth}%` }} 
+                            />
+                          </div>
+                          <span className="text-sm flex items-center">
+                            {result.desktopDepth}<Percent size={12} />
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+  <img 
+    src={result.desktopScreenshot} 
+    alt={`Desktop screenshot for ${result.keyword}`} 
+    className="w-20 h-12 object-cover rounded border border-gray-200 cursor-pointer"
+    onClick={() => handleImageClick(result.desktopScreenshot)}
+  />
+  {typeof result.desktopScrollDepth === 'number' && (
+    <div className="flex items-center gap-1 mt-1">
+      <span
+        className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${getDepthColor(result.desktopScrollDepth)}`}
+        style={{ minWidth: 80 }}
+      >
+        {result.desktopScrollDepth === 100
+          ? 'Not found'
+          : `${result.desktopScrollDepth}%`}
+      </span>
+      <span className="text-xs text-gray-700">
+        {result.desktopScrollDepth === 100
+          ? 'Keyword not found (100% scroll depth)'
+          : 'Keyword found at this scroll depth.'}
+      </span>
+      <span className="ml-1">
+        <span className="relative group cursor-pointer">
+          <svg width="12" height="12" fill="currentColor" className="inline-block text-gray-400">
+            <circle cx="6" cy="6" r="6" />
+            <text x="6" y="9" textAnchor="middle" fontSize="8" fill="#fff">i</text>
+          </svg>
+          <span className="absolute left-1/2 z-10 hidden group-hover:block bg-gray-900 text-white text-xs rounded px-2 py-1 -translate-x-1/2 mt-1 whitespace-nowrap">
+            This is the percentage down the page where the first keyword occurrence was found.
+          </span>
+        </span>
+      </span>
+    </div>
+  )}
+</TableCell>
+                      <TableCell>
+                        <div className="flex items-center">
+                          <div 
+                            className={`w-16 h-4 rounded-full mr-2 ${getDepthColor(result.mobileDepth)}`}
+                          >
+                            <div 
+                              className="h-full rounded-full bg-teal-600" 
+                              style={{ width: `${result.mobileDepth}%` }} 
+                            />
+                          </div>
+                          <span className="text-sm flex items-center">
+                            {result.mobileDepth}<Percent size={12} />
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+  <img 
+    src={result.mobileScreenshot} 
+    alt={`Mobile screenshot for ${result.keyword}`} 
+    className="w-10 h-16 object-cover rounded border border-gray-200 cursor-pointer"
+    onClick={() => handleImageClick(result.mobileScreenshot)}
+  />
+  {typeof result.mobileScrollDepth === 'number' && (
+    <div className="flex items-center gap-1 mt-1">
+      <span
+        className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${getDepthColor(result.mobileScrollDepth)}`}
+        style={{ minWidth: 80 }}
+      >
+        {result.mobileScrollDepth === 100
+          ? 'Not found'
+          : `${result.mobileScrollDepth}%`}
+      </span>
+      <span className="text-xs text-gray-700">
+        {result.mobileScrollDepth === 100
+          ? 'Keyword not found (100% scroll depth)'
+          : 'Keyword found at this scroll depth.'}
+      </span>
+      <span className="ml-1">
+        <span className="relative group cursor-pointer">
+          <svg width="12" height="12" fill="currentColor" className="inline-block text-gray-400">
+            <circle cx="6" cy="6" r="6" />
+            <text x="6" y="9" textAnchor="middle" fontSize="8" fill="#fff">i</text>
+          </svg>
+          <span className="absolute left-1/2 z-10 hidden group-hover:block bg-gray-900 text-white text-xs rounded px-2 py-1 -translate-x-1/2 mt-1 whitespace-nowrap">
+            This is the percentage down the page where the first keyword occurrence was found.
+          </span>
+        </span>
+      </span>
+    </div>
+  )}
+</TableCell>
+                    </TableRow>
+                    {hasScreenshotError && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="bg-yellow-100 text-yellow-900 text-xs p-2 border-t-0">
+                          <span className="font-semibold mr-2">⚠️ Screenshot Warning:</span>
+                          {result.screenshotErrors?.desktop && (
+                            <span className="mr-4">Desktop: {result.screenshotErrors.desktop}</span>
+                          )}
+                          {result.screenshotErrors?.mobile && (
+                            <span>Mobile: {result.screenshotErrors.mobile}</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </React.Fragment>
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>

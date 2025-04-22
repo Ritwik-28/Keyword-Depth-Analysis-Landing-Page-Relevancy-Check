@@ -12,7 +12,7 @@ interface SitemapLoaderProps {
 }
 
 const SitemapLoader: React.FC<SitemapLoaderProps> = ({ onSitemapLoaded }) => {
-  const [sitemapUrl, setSitemapUrl] = useState('https://example.com/sitemap.xml');
+  const [sitemapUrl, setSitemapUrl] = useState(import.meta.env.VITE_SITEMAP_URL || '');
   const [sitemapData, setSitemapData] = useState<SitemapData>({
     urls: [],
     isLoading: false,
@@ -39,12 +39,28 @@ const SitemapLoader: React.FC<SitemapLoaderProps> = ({ onSitemapLoaded }) => {
       const response = await fetchSitemap(sitemapUrl);
 
       if (response.success && response.data) {
+        // Always perform BFS ordering, but if the URLs are already flat, this keeps the same order
+        let bfsUrls = [];
+        const seen = new Set();
+        const queue = [...response.data];
+        while (queue.length > 0) {
+          const node = queue.shift();
+          if (!node || seen.has(node.url)) continue;
+          bfsUrls.push(node);
+          seen.add(node.url);
+          // If node.children exists, add them to the queue (for nested sitemaps)
+          if (Array.isArray(node.children)) {
+            queue.push(...node.children);
+          }
+        }
+        // If no children property, bfsUrls will just be the original array order
+        if (bfsUrls.length === 0) bfsUrls = response.data;
         setSitemapData({
-          urls: response.data,
+          urls: bfsUrls,
           isLoading: false,
           error: null,
         });
-        onSitemapLoaded(response.data);
+        onSitemapLoaded(bfsUrls);
       } else {
         setSitemapData({
           ...sitemapData,

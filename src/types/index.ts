@@ -16,11 +16,18 @@ export interface SitemapData {
 
 // Type for keyword analysis results
 export interface KeywordAnalysis {
+  pageUrl: string;
   keyword: string;
   desktopDepth: number;
   mobileDepth: number;
   desktopScreenshot: string;
   mobileScreenshot: string;
+  screenshotErrors?: {
+    desktop?: string;
+    mobile?: string;
+  };
+  desktopScrollDepth?: number | null;
+  mobileScrollDepth?: number | null;
 }
 
 // Type for the analysis state

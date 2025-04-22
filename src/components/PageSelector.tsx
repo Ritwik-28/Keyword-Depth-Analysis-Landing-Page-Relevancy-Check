@@ -6,12 +6,14 @@ import { Search } from 'lucide-react';
 interface PageSelectorProps {
   urls: SitemapUrl[];
   onPageSelected: (url: string) => void;
+  selectedUrl?: string;
 }
 
-const PageSelector: React.FC<PageSelectorProps> = ({ urls, onPageSelected }) => {
+const PageSelector: React.FC<PageSelectorProps> = ({ urls, onPageSelected, selectedUrl }) => {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedUrl, setSelectedUrl] = useState<string>('');
+  // Remove local selectedUrl state; rely on parent for selectedUrl
+  // const [selectedUrl, setSelectedUrl] = useState<string>('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,12 +32,19 @@ const PageSelector: React.FC<PageSelectorProps> = ({ urls, onPageSelected }) => 
     };
   }, [open]);
 
-  const filteredUrls = urls.filter(item =>
-    item.url.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  let filteredUrls = urls;
+  if (searchTerm.trim() !== '') {
+    const lowerSearch = searchTerm.toLowerCase();
+    const firstMatchIdx = urls.findIndex(item => item.url.toLowerCase().includes(lowerSearch));
+    if (firstMatchIdx !== -1) {
+      // Bring first match to top, keep rest in BFS order
+      filteredUrls = [urls[firstMatchIdx], ...urls.slice(0, firstMatchIdx), ...urls.slice(firstMatchIdx + 1)].filter((v, i, arr) => arr.findIndex(x => x.url === v.url) === i);
+    }
+    // Optionally, filter out non-matches for a tighter search:
+    // filteredUrls = filteredUrls.filter(item => item.url.toLowerCase().includes(lowerSearch));
+  }
 
   const handleSelectUrl = (url: string) => {
-    setSelectedUrl(url);
     onPageSelected(url);
     setOpen(false);
     setSearchTerm(''); // reset search after selection
@@ -52,7 +61,10 @@ const PageSelector: React.FC<PageSelectorProps> = ({ urls, onPageSelected }) => 
           {selectedUrl || 'Select a page to analyze'}
         </button>
         {open && (
-          <div className="absolute z-40 left-0 w-full mt-2 bg-white border rounded-md shadow-lg">
+          <div
+            className="fixed z-50 left-1/2 transform -translate-x-1/2 mt-2 w-[90vw] max-w-xl bg-white border rounded-md shadow-lg"
+            style={{ top: dropdownRef.current?.getBoundingClientRect().bottom || 100 }}
+          >
             <div className="flex items-center px-3 py-2 border-b bg-gray-50">
               <Search size={16} className="text-gray-400 mr-2" />
               <input
@@ -64,7 +76,7 @@ const PageSelector: React.FC<PageSelectorProps> = ({ urls, onPageSelected }) => 
                 autoFocus
               />
             </div>
-            <ul className="max-h-60 overflow-y-auto">
+            <ul className="overflow-y-auto max-h-[80vh]">
               {filteredUrls.length > 0 ? (
                 filteredUrls.map((item, idx) => (
                   <li

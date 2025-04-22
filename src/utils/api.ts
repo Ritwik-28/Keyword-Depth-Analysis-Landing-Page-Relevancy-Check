@@ -1,9 +1,10 @@
 
 import { ApiResponse, SitemapUrl, KeywordAnalysis } from '@/types';
 import { parseXml } from './xmlParser';
+import { redis } from './redisClient';
 
 // Base URL for API calls - update this to your deployed API URL
-const API_BASE_URL = '/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 // Helper function for making API requests
 async function fetchApi<T>(
@@ -44,18 +45,24 @@ async function fetchApi<T>(
 // Fetch sitemap from a URL and parse XML
 export async function fetchSitemap(sitemapUrl: string): Promise<ApiResponse<SitemapUrl[]>> {
   try {
+    const cacheKey = `sitemap:${sitemapUrl}`;
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      return {
+        success: true,
+        data: JSON.parse(cached as string),
+      };
+    }
     const response = await fetch(sitemapUrl);
-    
     if (!response.ok) {
       return {
         success: false,
         error: `Failed to fetch sitemap: ${response.statusText}`,
       };
     }
-    
     const xmlText = await response.text();
     const urls = parseXml(xmlText);
-    
+    await redis.set(cacheKey, JSON.stringify(urls), { ex: 600 }); // 10 min TTL
     return {
       success: true,
       data: urls,

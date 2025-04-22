@@ -8,6 +8,7 @@ interface KeywordInputProps {
   onKeywordsChange: (keywords: string[]) => void;
 }
 
+// NOTE: If you add dropdowns here, use a Portal and z-50/fixed positioning for dropdown menus to prevent clipping inside containers.
 const KeywordInput: React.FC<KeywordInputProps> = ({ onKeywordsChange }) => {
   const [inputValue, setInputValue] = useState('');
   const [keywords, setKeywords] = useState<string[]>([]);
