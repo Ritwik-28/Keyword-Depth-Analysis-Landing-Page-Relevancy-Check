@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
@@ -8,24 +8,13 @@ import PageSelector from '@/components/PageSelector';
 import KeywordInput from '@/components/KeywordInput';
 import AnalyzeButton from '@/components/AnalyzeButton';
 import AnalysisResults from '@/components/AnalysisResults';
-import { SitemapUrl, AnalysisState } from '@/types';
-import { mockAnalyzeKeywords } from '@/utils/api';
+import { SitemapUrl, AnalysisState, KeywordAnalysis } from '@/types';
+import { analyzeKeywordOnPage, fetchKeywordAnalysisResults } from '@/utils/keywordAnalysisService';
 import { AlertCircle, BarChart, History } from 'lucide-react';
-
-// Hardcoded Crio.do sitemap URLs
-const HARDCODED_URLS: SitemapUrl[] = [
-  { url: 'https://www.crio.do/', priority: '1.0' },
-  { url: 'https://www.crio.do/courses', priority: '0.9' },
-  { url: 'https://www.crio.do/projects', priority: '0.9' },
-  { url: 'https://www.crio.do/accelerator', priority: '0.8' },
-  { url: 'https://www.crio.do/about', priority: '0.7' },
-  { url: 'https://www.crio.do/blog', priority: '0.8' },
-  { url: 'https://www.crio.do/contact', priority: '0.6' },
-  { url: 'https://www.crio.do/careers', priority: '0.6' },
-  { url: 'https://www.crio.do/testimonials', priority: '0.7' },
-];
+import SitemapLoader from '@/components/SitemapLoader';
 
 const Index = () => {
+  const [sitemapUrls, setSitemapUrls] = useState<SitemapUrl[]>([]);
   const [selectedUrl, setSelectedUrl] = useState<string>('');
   const [keywords, setKeywords] = useState<string[]>([]);
   const [analysisState, setAnalysisState] = useState<AnalysisState>({
@@ -33,6 +22,26 @@ const Index = () => {
     results: [],
     error: null,
   });
+  const [historyResults, setHistoryResults] = useState<KeywordAnalysis[]>([]);
+
+  // Load history data when the component mounts or the history tab is selected
+  const loadHistoryData = async () => {
+    try {
+      const results = await fetchKeywordAnalysisResults();
+      setHistoryResults(results);
+    } catch (error) {
+      console.error('Error loading history data:', error);
+    }
+  };
+
+  useEffect(() => {
+    // Load history data when the component mounts
+    loadHistoryData();
+  }, []);
+
+  const handleSitemapLoaded = (urls: SitemapUrl[]) => {
+    setSitemapUrls(urls);
+  };
 
   const handlePageSelected = (url: string) => {
     setSelectedUrl(url);
@@ -66,22 +75,22 @@ const Index = () => {
     });
 
     try {
-      // In production, use the real API: analyzeKeywords(selectedUrl, keywords)
-      const response = await mockAnalyzeKeywords(selectedUrl, keywords);
-
-      if (response.success && response.data) {
-        setAnalysisState({
-          isAnalyzing: false,
-          results: response.data,
-          error: null,
-        });
-      } else {
-        setAnalysisState({
-          ...analysisState,
-          isAnalyzing: false,
-          error: response.error || 'Analysis failed',
-        });
+      // Analyze each keyword one by one
+      const results: KeywordAnalysis[] = [];
+      
+      for (const keyword of keywords) {
+        const result = await analyzeKeywordOnPage(selectedUrl, keyword);
+        results.push(result);
       }
+
+      setAnalysisState({
+        isAnalyzing: false,
+        results: results,
+        error: null,
+      });
+      
+      // Refresh history data after analysis
+      loadHistoryData();
     } catch (error) {
       setAnalysisState({
         ...analysisState,
@@ -109,7 +118,7 @@ const Index = () => {
               <BarChart size={16} className="mr-2" /> 
               Analyze
             </TabsTrigger>
-            <TabsTrigger value="history" className="flex items-center">
+            <TabsTrigger value="history" className="flex items-center" onClick={loadHistoryData}>
               <History size={16} className="mr-2" /> 
               History
             </TabsTrigger>
@@ -117,14 +126,26 @@ const Index = () => {
           <TabsContent value="analyze" className="space-y-6 mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>Step 1: Select Page</CardTitle>
+                <CardTitle>Step 1: Load Sitemap</CardTitle>
                 <CardDescription>
-                  Choose a landing page from your sitemap to analyze. You can search/filter the choices below.
+                  Provide a sitemap URL to load pages for analysis
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <SitemapLoader onSitemapLoaded={handleSitemapLoaded} />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Step 2: Select Page</CardTitle>
+                <CardDescription>
+                  Choose a landing page from your sitemap to analyze
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <PageSelector 
-                  urls={HARDCODED_URLS} 
+                  urls={sitemapUrls} 
                   onPageSelected={handlePageSelected} 
                 />
               </CardContent>
@@ -132,7 +153,7 @@ const Index = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle>Step 2: Enter Keywords</CardTitle>
+                <CardTitle>Step 3: Enter Keywords</CardTitle>
                 <CardDescription>
                   Add keywords you want to analyze (separate with commas)
                 </CardDescription>
@@ -176,11 +197,15 @@ const Index = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center justify-center h-40 bg-gray-50 rounded-md border border-dashed">
-                  <p className="text-gray-500">
-                    History feature will be available after authentication setup
-                  </p>
-                </div>
+                {historyResults.length > 0 ? (
+                  <AnalysisResults results={historyResults} />
+                ) : (
+                  <div className="flex items-center justify-center h-40 bg-gray-50 rounded-md border border-dashed">
+                    <p className="text-gray-500">
+                      No analysis history found. Run some analysis first.
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -191,4 +216,3 @@ const Index = () => {
 };
 
 export default Index;
-

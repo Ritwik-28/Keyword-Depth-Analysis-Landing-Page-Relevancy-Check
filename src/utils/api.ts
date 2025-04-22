@@ -1,4 +1,6 @@
+
 import { ApiResponse, SitemapUrl, KeywordAnalysis } from '@/types';
+import { parseXml } from './xmlParser';
 
 // Base URL for API calls - update this to your deployed API URL
 const API_BASE_URL = '/api';
@@ -39,12 +41,32 @@ async function fetchApi<T>(
   }
 }
 
-// Fetch sitemap from a URL
+// Fetch sitemap from a URL and parse XML
 export async function fetchSitemap(sitemapUrl: string): Promise<ApiResponse<SitemapUrl[]>> {
-  return fetchApi<SitemapUrl[]>('/sitemap', {
-    method: 'POST',
-    body: JSON.stringify({ url: sitemapUrl }),
-  });
+  try {
+    const response = await fetch(sitemapUrl);
+    
+    if (!response.ok) {
+      return {
+        success: false,
+        error: `Failed to fetch sitemap: ${response.statusText}`,
+      };
+    }
+    
+    const xmlText = await response.text();
+    const urls = parseXml(xmlText);
+    
+    return {
+      success: true,
+      data: urls,
+    };
+  } catch (error) {
+    console.error('Error fetching sitemap:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'An unknown error occurred while fetching sitemap',
+    };
+  }
 }
 
 // Analyze keywords on a page
@@ -59,51 +81,4 @@ export async function analyzeKeywords(
       keywords 
     }),
   });
-}
-
-// This is a mock function for local development - remove this in production
-export async function mockAnalyzeKeywords(
-  pageUrl: string, 
-  keywords: string[]
-): Promise<ApiResponse<KeywordAnalysis[]>> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  
-  // Create mock results
-  const results: KeywordAnalysis[] = keywords.map(keyword => ({
-    keyword,
-    desktopDepth: Math.floor(Math.random() * 100),
-    mobileDepth: Math.floor(Math.random() * 100),
-    desktopScreenshot: 'https://via.placeholder.com/640x360?text=Desktop+Screenshot',
-    mobileScreenshot: 'https://via.placeholder.com/360x640?text=Mobile+Screenshot',
-  }));
-  
-  return {
-    success: true,
-    data: results,
-  };
-}
-
-// Mock sitemap fetching for development with Crio.do sitemap
-export async function mockFetchSitemap(sitemapUrl: string): Promise<ApiResponse<SitemapUrl[]>> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  // Hardcoded Crio.do sitemap URLs
-  const urls: SitemapUrl[] = [
-    { url: 'https://www.crio.do/', priority: '1.0' },
-    { url: 'https://www.crio.do/courses', priority: '0.9' },
-    { url: 'https://www.crio.do/projects', priority: '0.9' },
-    { url: 'https://www.crio.do/accelerator', priority: '0.8' },
-    { url: 'https://www.crio.do/about', priority: '0.7' },
-    { url: 'https://www.crio.do/blog', priority: '0.8' },
-    { url: 'https://www.crio.do/contact', priority: '0.6' },
-    { url: 'https://www.crio.do/careers', priority: '0.6' },
-    { url: 'https://www.crio.do/testimonials', priority: '0.7' },
-  ];
-  
-  return {
-    success: true,
-    data: urls,
-  };
 }

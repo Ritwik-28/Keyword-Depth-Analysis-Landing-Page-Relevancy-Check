@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { SitemapData, SitemapUrl } from '@/types';
-import { mockFetchSitemap } from '@/utils/api';
+import { fetchSitemap } from '@/utils/api';
 import { Globe } from 'lucide-react';
 
 interface SitemapLoaderProps {
@@ -35,8 +35,8 @@ const SitemapLoader: React.FC<SitemapLoaderProps> = ({ onSitemapLoaded }) => {
     });
 
     try {
-      // In production, use the real API: fetchSitemap(sitemapUrl)
-      const response = await mockFetchSitemap(sitemapUrl);
+      // Use the real API to fetch and parse the sitemap XML
+      const response = await fetchSitemap(sitemapUrl);
 
       if (response.success && response.data) {
         setSitemapData({
