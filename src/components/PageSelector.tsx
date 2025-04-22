@@ -1,13 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
+import React, { useState, useRef, useEffect } from 'react';
 import { SitemapUrl } from '@/types';
 import { Search } from 'lucide-react';
 
@@ -17,59 +9,81 @@ interface PageSelectorProps {
 }
 
 const PageSelector: React.FC<PageSelectorProps> = ({ urls, onPageSelected }) => {
+  const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredUrls, setFilteredUrls] = useState<SitemapUrl[]>(urls);
   const [selectedUrl, setSelectedUrl] = useState<string>('');
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (searchTerm) {
-      const filtered = urls.filter(item => 
-        item.url.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredUrls(filtered);
-    } else {
-      setFilteredUrls(urls);
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
     }
-  }, [searchTerm, urls]);
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [open]);
 
-  const handleSelectUrl = (value: string) => {
-    setSelectedUrl(value);
-    onPageSelected(value);
+  const filteredUrls = urls.filter(item =>
+    item.url.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleSelectUrl = (url: string) => {
+    setSelectedUrl(url);
+    onPageSelected(url);
+    setOpen(false);
+    setSearchTerm(''); // reset search after selection
   };
 
   return (
     <div className="space-y-4">
-      <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <Search size={16} className="text-gray-400" />
-        </div>
-        <Input
-          type="text"
-          placeholder="Filter URLs..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
-      </div>
-
-      <Select onValueChange={handleSelectUrl} value={selectedUrl}>
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Select a page to analyze" />
-        </SelectTrigger>
-        <SelectContent className="max-h-[200px]">
-          {filteredUrls.length > 0 ? (
-            filteredUrls.map((item, index) => (
-              <SelectItem key={index} value={item.url}>
-                {item.url}
-              </SelectItem>
-            ))
-          ) : (
-            <div className="p-2 text-center text-sm text-gray-500">
-              No URLs match your search
+      <div className="relative" ref={dropdownRef}>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="w-full px-4 py-2 border rounded-md text-left bg-white hover:bg-blue-50 transition focus:outline-none focus:ring-2 focus:ring-blue-400"
+        >
+          {selectedUrl || 'Select a page to analyze'}
+        </button>
+        {open && (
+          <div className="absolute z-40 left-0 w-full mt-2 bg-white border rounded-md shadow-lg">
+            <div className="flex items-center px-3 py-2 border-b bg-gray-50">
+              <Search size={16} className="text-gray-400 mr-2" />
+              <input
+                type="text"
+                className="w-full bg-transparent outline-none"
+                placeholder="Type to filter URLs..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                autoFocus
+              />
             </div>
-          )}
-        </SelectContent>
-      </Select>
+            <ul className="max-h-60 overflow-y-auto">
+              {filteredUrls.length > 0 ? (
+                filteredUrls.map((item, idx) => (
+                  <li
+                    key={item.url}
+                    className={`px-4 py-2 cursor-pointer hover:bg-blue-100 ${
+                      selectedUrl === item.url ? 'bg-blue-50 font-medium' : ''
+                    }`}
+                    onClick={() => handleSelectUrl(item.url)}
+                  >
+                    {item.url}
+                  </li>
+                ))
+              ) : (
+                <li className="px-4 py-2 text-gray-500">No URLs found</li>
+              )}
+            </ul>
+          </div>
+        )}
+      </div>
 
       {selectedUrl && (
         <div className="p-4 bg-blue-50 border border-blue-100 rounded-md">

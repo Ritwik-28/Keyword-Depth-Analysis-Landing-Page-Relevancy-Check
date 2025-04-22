@@ -4,17 +4,28 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import SitemapLoader from '@/components/SitemapLoader';
 import PageSelector from '@/components/PageSelector';
 import KeywordInput from '@/components/KeywordInput';
 import AnalyzeButton from '@/components/AnalyzeButton';
 import AnalysisResults from '@/components/AnalysisResults';
-import { SitemapUrl, KeywordAnalysis, AnalysisState } from '@/types';
+import { SitemapUrl, AnalysisState } from '@/types';
 import { mockAnalyzeKeywords } from '@/utils/api';
 import { AlertCircle, BarChart, History } from 'lucide-react';
 
+// Hardcoded Crio.do sitemap URLs
+const HARDCODED_URLS: SitemapUrl[] = [
+  { url: 'https://www.crio.do/', priority: '1.0' },
+  { url: 'https://www.crio.do/courses', priority: '0.9' },
+  { url: 'https://www.crio.do/projects', priority: '0.9' },
+  { url: 'https://www.crio.do/accelerator', priority: '0.8' },
+  { url: 'https://www.crio.do/about', priority: '0.7' },
+  { url: 'https://www.crio.do/blog', priority: '0.8' },
+  { url: 'https://www.crio.do/contact', priority: '0.6' },
+  { url: 'https://www.crio.do/careers', priority: '0.6' },
+  { url: 'https://www.crio.do/testimonials', priority: '0.7' },
+];
+
 const Index = () => {
-  const [sitemapUrls, setSitemapUrls] = useState<SitemapUrl[]>([]);
   const [selectedUrl, setSelectedUrl] = useState<string>('');
   const [keywords, setKeywords] = useState<string[]>([]);
   const [analysisState, setAnalysisState] = useState<AnalysisState>({
@@ -22,10 +33,6 @@ const Index = () => {
     results: [],
     error: null,
   });
-
-  const handleSitemapLoaded = (urls: SitemapUrl[]) => {
-    setSitemapUrls(urls);
-  };
 
   const handlePageSelected = (url: string) => {
     setSelectedUrl(url);
@@ -110,26 +117,14 @@ const Index = () => {
           <TabsContent value="analyze" className="space-y-6 mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>Step 1: Load Sitemap</CardTitle>
+                <CardTitle>Step 1: Select Page</CardTitle>
                 <CardDescription>
-                  Enter your website's sitemap URL to load available pages
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <SitemapLoader onSitemapLoaded={handleSitemapLoaded} />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Step 2: Select Page</CardTitle>
-                <CardDescription>
-                  Choose a specific page from your sitemap to analyze
+                  Choose a landing page from your sitemap to analyze. You can search/filter the choices below.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <PageSelector 
-                  urls={sitemapUrls} 
+                  urls={HARDCODED_URLS} 
                   onPageSelected={handlePageSelected} 
                 />
               </CardContent>
@@ -137,7 +132,7 @@ const Index = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle>Step 3: Enter Keywords</CardTitle>
+                <CardTitle>Step 2: Enter Keywords</CardTitle>
                 <CardDescription>
                   Add keywords you want to analyze (separate with commas)
                 </CardDescription>
@@ -196,3 +191,4 @@ const Index = () => {
 };
 
 export default Index;
+
