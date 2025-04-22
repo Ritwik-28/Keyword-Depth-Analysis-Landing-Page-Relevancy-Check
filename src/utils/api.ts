@@ -1,4 +1,3 @@
-
 import { ApiResponse, SitemapUrl, KeywordAnalysis } from '@/types';
 
 // Base URL for API calls - update this to your deployed API URL
@@ -85,22 +84,22 @@ export async function mockAnalyzeKeywords(
   };
 }
 
-// Mock sitemap fetching for development
+// Mock sitemap fetching for development with Crio.do sitemap
 export async function mockFetchSitemap(sitemapUrl: string): Promise<ApiResponse<SitemapUrl[]>> {
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 1000));
   
-  // Create mock sitemap URLs
+  // Hardcoded Crio.do sitemap URLs
   const urls: SitemapUrl[] = [
-    { url: 'https://example.com/', priority: '1.0' },
-    { url: 'https://example.com/about', priority: '0.8' },
-    { url: 'https://example.com/products', priority: '0.9' },
-    { url: 'https://example.com/products/item1', priority: '0.7' },
-    { url: 'https://example.com/products/item2', priority: '0.7' },
-    { url: 'https://example.com/blog', priority: '0.8' },
-    { url: 'https://example.com/blog/post1', priority: '0.6' },
-    { url: 'https://example.com/blog/post2', priority: '0.6' },
-    { url: 'https://example.com/contact', priority: '0.8' },
+    { url: 'https://www.crio.do/', priority: '1.0' },
+    { url: 'https://www.crio.do/courses', priority: '0.9' },
+    { url: 'https://www.crio.do/projects', priority: '0.9' },
+    { url: 'https://www.crio.do/accelerator', priority: '0.8' },
+    { url: 'https://www.crio.do/about', priority: '0.7' },
+    { url: 'https://www.crio.do/blog', priority: '0.8' },
+    { url: 'https://www.crio.do/contact', priority: '0.6' },
+    { url: 'https://www.crio.do/careers', priority: '0.6' },
+    { url: 'https://www.crio.do/testimonials', priority: '0.7' },
   ];
   
   return {
