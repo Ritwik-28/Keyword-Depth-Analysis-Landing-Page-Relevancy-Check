@@ -92,6 +92,31 @@ const PageSelector: React.FC<PageSelectorProps> = ({ urls, onPageSelected, selec
               ) : (
                 <li className="px-4 py-2 text-gray-500">No URLs found</li>
               )}
+              {/* Allow manual URL entry if not in list and valid URL */}
+              {searchTerm.trim() && !urls.some(u => u.url === searchTerm.trim()) && (() => {
+                let isValid = false;
+                try {
+                  const url = new URL(searchTerm.trim());
+                  isValid = url.protocol === 'http:' || url.protocol === 'https:';
+                } catch {}
+                if (isValid) {
+                  return (
+                    <li
+                      className="px-4 py-2 cursor-pointer text-green-700 hover:bg-green-50 font-medium border-t border-gray-100"
+                      onClick={() => handleSelectUrl(searchTerm.trim())}
+                    >
+                      Use this URL: <span className="underline">{searchTerm.trim()}</span>
+                    </li>
+                  );
+                } else {
+                  return (
+                    <li className="px-4 py-2 text-red-600 font-medium border-t border-gray-100">
+                      Please enter a valid URL (including http(s)://)
+                    </li>
+                  );
+                }
+              })()}
+
             </ul>
           </div>
         )}
